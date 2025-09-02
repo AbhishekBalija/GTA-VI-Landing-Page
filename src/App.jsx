@@ -472,11 +472,6 @@ const App = () => {
             <p className="mt-4 text-2xl font-bold">
               {Math.round(((loadingProgress.images + loadingProgress.videos + loadingProgress.fonts) / loadingProgress.total) * 100)}%
             </p>
-            <div className="mt-6 text-sm">
-              <p>Fonts: {loadingProgress.fonts}/{loadingProgress.totalFonts || 0}</p>
-              <p>Videos: {loadingProgress.videos}/{loadingProgress.totalVideos || 0}</p>
-              <p>Images: {loadingProgress.images}/{loadingProgress.totalImages || 0}</p>
-            </div>
           </div>
         </div>
       )}
