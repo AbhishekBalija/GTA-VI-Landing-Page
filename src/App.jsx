@@ -1,13 +1,117 @@
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "remixicon/fonts/remixicon.css";
 
 const App = () => {
   let [showContent, setShowContent] = useState(false);
+  let [assetsLoaded, setAssetsLoaded] = useState(false);
+  
+  // Preload all assets
+  useEffect(() => {
+    const imagesToPreload = [
+      "/sky1.png",
+      "/buildings2.png",
+      "/women.png",
+      "/man.png",
+      "/man_sitting.png",
+      "/women_sitting.png",
+      "/ps5.png"
+    ];
+    
+    const videosToPreload = [
+      "/city_night.mp4"
+    ];
+    
+    const fontsToPreload = [
+      "/pricedown.otf"
+    ];
+    
+    let loadedImages = 0;
+    let loadedVideos = 0;
+    let loadedFonts = 0;
+    
+    // Set a timeout to ensure we don't block forever if assets fail to load
+    const timeoutId = setTimeout(() => {
+      console.log('Asset loading timeout reached, proceeding anyway');
+      setAssetsLoaded(true);
+    }, 5000); // 5 seconds timeout
+    
+    // Preload images
+    imagesToPreload.forEach(src => {
+      const img = new Image();
+      img.onload = () => {
+        console.log(`Image loaded: ${src}`);
+        loadedImages++;
+        checkAllLoaded();
+      };
+      img.onerror = () => {
+        console.error(`Failed to load image: ${src}`);
+        loadedImages++;
+        checkAllLoaded();
+      };
+      img.src = src; // Set src after attaching event handlers
+    });
+    
+    // Preload videos - using fetch to avoid CORS issues
+    videosToPreload.forEach(src => {
+      fetch(src)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch video: ${src}`);
+          }
+          console.log(`Video fetched: ${src}`);
+          loadedVideos++;
+          checkAllLoaded();
+          return response;
+        })
+        .catch(error => {
+          console.error(`Error fetching video: ${src}`, error);
+          loadedVideos++;
+          checkAllLoaded();
+        });
+    });
+    
+    // Preload fonts using FontFace API
+    fontsToPreload.forEach(src => {
+      const fontName = src.split('/').pop().split('.')[0]; // Extract font name from path
+      const fontFace = new FontFace(fontName, `url(${src})`);
+      
+      fontFace.load()
+        .then(loadedFace => {
+          // Add font to document fonts collection
+          document.fonts.add(loadedFace);
+          console.log(`Font loaded: ${src}`);
+          loadedFonts++;
+          checkAllLoaded();
+        })
+        .catch(error => {
+          console.error(`Failed to load font: ${src}`, error);
+          loadedFonts++;
+          checkAllLoaded();
+        });
+    });
+    
+    function checkAllLoaded() {
+      if (loadedImages === imagesToPreload.length && 
+          loadedVideos === videosToPreload.length && 
+          loadedFonts === fontsToPreload.length) {
+        console.log('All assets loaded');
+        clearTimeout(timeoutId);
+        setAssetsLoaded(true);
+      }
+    }
+    
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   // starting animation
   useGSAP(() => {
+    if (!assetsLoaded) return;
+    
     const tl = gsap.timeline();
 
     tl.to(".vi-mask-group", {
@@ -33,11 +137,11 @@ const App = () => {
       },
       "<+0.5"
     );
-  });
+  }, [assetsLoaded]);
 
   // mouse movement
   useGSAP(() => {
-    if (!showContent) return;
+    if (!showContent || !assetsLoaded) return;
 
     gsap.to(".scene", {
       rotate: 0,
@@ -142,10 +246,20 @@ const App = () => {
       repeat: -1,
       yoyo: true,
     });
-  }, [showContent]);
+  }, [showContent, assetsLoaded]);
 
   return (
     <>
+      {!assetsLoaded && (
+        <div className="loading-screen fixed top-0 left-0 z-[200] w-full h-screen flex items-center justify-center bg-black text-white">
+          <div className="loading-content flex flex-col items-center">
+            <h2 className="text-4xl mb-4">Loading Assets</h2>
+            <div className="loading-bar w-64 h-2 bg-gray-800 rounded-full overflow-hidden">
+              <div className="loading-progress h-full bg-white animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="svg flex items-center justify-center fixed top-0 left-0 z-[100] w-full h-screen overflow-hidden bg-[#000]">
         <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
           <defs>
