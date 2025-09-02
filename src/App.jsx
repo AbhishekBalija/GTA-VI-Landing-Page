@@ -167,7 +167,7 @@ const App = () => {
             </mask>
           </defs>
           <image
-            href="./buildings2.png"
+            href="/buildings2.png"
             width="100%"
             height="100%"
             preserveAspectRatio="xMidYMid slice"
@@ -195,14 +195,14 @@ const App = () => {
                 {/* background sky */}
                 <img
                   className="sky absolute scale-[1.7] rotate-[-20deg] top-0 left-0 w-full h-full object-cover"
-                  src="sky1.png"
+                  src="/sky1.png"
                   alt="sky"
                 />
 
                 {/* buildings */}
                 <img
                   className="buildings absolute rotate-[5deg] scale-[1.4] top-0 left-0 w-full h-full object-cover"
-                  src="./buildings2.png"
+                  src="/buildings2.png"
                   alt="building"
                 />
                 {/* text */}
@@ -215,14 +215,14 @@ const App = () => {
                 {/* woman on the right corner */}
                 <img
                   className="woman absolute bottom-[-150%] right-[-10%] scale-70 rotate-[-25deg] origin-bottom-right"
-                  src="./women.png"
+                  src="/women.png"
                   alt="woman"
                 />
 
                 {/* man on the left corner */}
                 <img
                   className="man absolute bottom-0 left-[-3%] scale-45 origin-bottom-left"
-                  src="./man.png"
+                  src="/man.png"
                   alt="man"
                 />
               </div>
@@ -234,13 +234,13 @@ const App = () => {
                   Scroll Down
                 </h3>
               </div>
-              <img className="h-[45px]" src="./ps5.png" alt="ps5" />
+              <img className="h-[45px]" src="/ps5.png" alt="ps5" />
             </div>
           </div>
           <div className="content relative w-full flex px-10 items-center justify-center h-screen overflow-hidden">
             {/* Background video */}
             <video
-              src="./city_night.mp4"
+              src="/city_night.mp4"
               autoPlay
               loop
               muted
@@ -256,12 +256,12 @@ const App = () => {
               <div className="limg w-1/2 h-full relative">
                 <img
                   className="absolute scale-[1.1] top-1/2 left-[30%] px-1 -translate-x-1/2 -translate-y-1/2"
-                  src="./man_sitting.png"
+                  src="/man_sitting.png"
                   alt="man sitting"
                 />
                 <img
                   className="absolute scale-[65%] top-1/2 left-[68%] -translate-x-1/2 -translate-y-1/2"
-                  src="./women_sitting.png"
+                  src="/women_sitting.png"
                   alt="woman sitting"
                 />
               </div>
