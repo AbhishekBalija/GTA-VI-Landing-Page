@@ -10,7 +10,10 @@ const App = () => {
     images: 0,
     videos: 0,
     fonts: 0,
-    total: 0
+    total: 0,
+    totalImages: 0,
+    totalVideos: 0,
+    totalFonts: 0
   });
   
   // Preload all assets
@@ -39,18 +42,42 @@ const App = () => {
       images: 0,
       videos: 0,
       fonts: 0,
-      total: totalAssets
+      total: totalAssets,
+      totalImages: imagesToPreload.length,
+      totalVideos: videosToPreload.length,
+      totalFonts: fontsToPreload.length
     });
     
     let loadedImages = 0;
     let loadedVideos = 0;
     let loadedFonts = 0;
     
-    // Set a timeout to ensure we don't block forever if assets fail to load
-    const timeoutId = setTimeout(() => {
+    // Set timeouts to ensure we don't block forever if assets fail to load
+    // But we'll only use this as a last resort and show a warning
+    let timeoutIds = [];
+    
+    const initialTimeoutId = setTimeout(() => {
       console.log('Asset loading timeout reached, proceeding anyway');
-      setAssetsLoaded(true);
-    }, 10000); // 10 seconds timeout - increased to give more time for assets
+      // Instead of immediately setting assetsLoaded, check how many assets are loaded
+      const totalLoaded = loadedImages + loadedVideos + loadedFonts;
+      const percentLoaded = Math.floor((totalLoaded / totalAssets) * 100);
+      
+      if (percentLoaded < 100) {
+        console.warn(`Only ${percentLoaded}% of assets loaded after timeout. Waiting for more...`);
+        
+        // Give more time for assets to load
+        const extendedTimeoutId = setTimeout(() => {
+          console.warn('Extended timeout reached. Proceeding with available assets.');
+          setAssetsLoaded(true);
+        }, 10000); // Additional 10 seconds
+        
+        timeoutIds.push(extendedTimeoutId);
+      } else {
+        setAssetsLoaded(true);
+      }
+    }, 15000); // 15 seconds timeout - increased to give more time for assets
+    
+    timeoutIds.push(initialTimeoutId);
     
     // Function to load assets in sequence
     const loadAssetsInSequence = () => {
@@ -259,19 +286,31 @@ const App = () => {
       
       console.log(`Loading progress: ${percentLoaded}% (${totalLoaded}/${totalAssets})`);
       
+      // Update loading progress state for UI
+      setLoadingProgress(prev => ({
+        ...prev,
+        total: totalAssets,
+        // Ensure we're showing the actual count of loaded assets
+        images: loadedImages,
+        videos: loadedVideos,
+        fonts: loadedFonts
+      }));
+      
       // Only set assetsLoaded to true when ALL assets are loaded (100%)
       if (loadedImages === imagesToPreload.length && 
           loadedVideos === videosToPreload.length && 
           loadedFonts === fontsToPreload.length) {
         console.log('All assets loaded');
-        clearTimeout(timeoutId);
+        // Clear all timeouts
+        timeoutIds.forEach(id => clearTimeout(id));
         setAssetsLoaded(true);
       }
     }
     
     // Cleanup function
     return () => {
-      clearTimeout(timeoutId);
+      // Clear all timeouts
+      timeoutIds.forEach(id => clearTimeout(id));
     };
   }, []);
 
@@ -420,8 +459,8 @@ const App = () => {
       {!assetsLoaded && (
         <div className="loading-screen fixed top-0 left-0 z-[200] w-full h-screen flex items-center justify-center bg-black text-white">
           <div className="loading-content flex flex-col items-center">
-            <h2 className="text-4xl mb-4">Loading Assets</h2>
-            <div className="loading-bar w-64 h-2 bg-gray-800 rounded-full overflow-hidden">
+            <h2 className="text-4xl mb-4" style={{ fontFamily: 'pricedown, Arial, sans-serif' }}>Loading Assets</h2>
+            <div className="loading-bar w-80 h-4 bg-gray-800 rounded-full overflow-hidden border-2 border-white">
               <div 
                 className="loading-progress h-full bg-white" 
                 style={{ 
@@ -430,9 +469,14 @@ const App = () => {
                 }}
               ></div>
             </div>
-            <p className="mt-2 text-lg">
+            <p className="mt-4 text-2xl font-bold">
               {Math.round(((loadingProgress.images + loadingProgress.videos + loadingProgress.fonts) / loadingProgress.total) * 100)}%
             </p>
+            <div className="mt-6 text-sm">
+              <p>Fonts: {loadingProgress.fonts}/{loadingProgress.totalFonts || 0}</p>
+              <p>Videos: {loadingProgress.videos}/{loadingProgress.totalVideos || 0}</p>
+              <p>Images: {loadingProgress.images}/{loadingProgress.totalImages || 0}</p>
+            </div>
           </div>
         </div>
       )}
