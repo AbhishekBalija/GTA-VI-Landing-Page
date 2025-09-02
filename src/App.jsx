@@ -6,6 +6,12 @@ import "remixicon/fonts/remixicon.css";
 const App = () => {
   let [showContent, setShowContent] = useState(false);
   let [assetsLoaded, setAssetsLoaded] = useState(false);
+  let [loadingProgress, setLoadingProgress] = useState({
+    images: 0,
+    videos: 0,
+    fonts: 0,
+    total: 0
+  });
   
   // Preload all assets
   useEffect(() => {
@@ -27,6 +33,15 @@ const App = () => {
       "/pricedown.otf"
     ];
     
+    // Initialize loading progress
+    const totalAssets = imagesToPreload.length + videosToPreload.length + fontsToPreload.length;
+    setLoadingProgress({
+      images: 0,
+      videos: 0,
+      fonts: 0,
+      total: totalAssets
+    });
+    
     let loadedImages = 0;
     let loadedVideos = 0;
     let loadedFonts = 0;
@@ -35,7 +50,7 @@ const App = () => {
     const timeoutId = setTimeout(() => {
       console.log('Asset loading timeout reached, proceeding anyway');
       setAssetsLoaded(true);
-    }, 5000); // 5 seconds timeout
+    }, 8000); // 8 seconds timeout - increased to give more time for assets
     
     // Preload images
     imagesToPreload.forEach(src => {
@@ -43,11 +58,19 @@ const App = () => {
       img.onload = () => {
         console.log(`Image loaded: ${src}`);
         loadedImages++;
+        setLoadingProgress(prev => ({
+          ...prev,
+          images: loadedImages
+        }));
         checkAllLoaded();
       };
       img.onerror = () => {
         console.error(`Failed to load image: ${src}`);
         loadedImages++;
+        setLoadingProgress(prev => ({
+          ...prev,
+          images: loadedImages
+        }));
         checkAllLoaded();
       };
       img.src = src; // Set src after attaching event handlers
@@ -62,12 +85,20 @@ const App = () => {
           }
           console.log(`Video fetched: ${src}`);
           loadedVideos++;
+          setLoadingProgress(prev => ({
+            ...prev,
+            videos: loadedVideos
+          }));
           checkAllLoaded();
           return response;
         })
         .catch(error => {
           console.error(`Error fetching video: ${src}`, error);
           loadedVideos++;
+          setLoadingProgress(prev => ({
+            ...prev,
+            videos: loadedVideos
+          }));
           checkAllLoaded();
         });
     });
@@ -83,16 +114,25 @@ const App = () => {
           document.fonts.add(loadedFace);
           console.log(`Font loaded: ${src}`);
           loadedFonts++;
+          setLoadingProgress(prev => ({
+            ...prev,
+            fonts: loadedFonts
+          }));
           checkAllLoaded();
         })
         .catch(error => {
           console.error(`Failed to load font: ${src}`, error);
           loadedFonts++;
+          setLoadingProgress(prev => ({
+            ...prev,
+            fonts: loadedFonts
+          }));
           checkAllLoaded();
         });
     });
     
     function checkAllLoaded() {
+      // Only set assetsLoaded to true when ALL assets are loaded (100%)
       if (loadedImages === imagesToPreload.length && 
           loadedVideos === videosToPreload.length && 
           loadedFonts === fontsToPreload.length) {
@@ -255,8 +295,17 @@ const App = () => {
           <div className="loading-content flex flex-col items-center">
             <h2 className="text-4xl mb-4">Loading Assets</h2>
             <div className="loading-bar w-64 h-2 bg-gray-800 rounded-full overflow-hidden">
-              <div className="loading-progress h-full bg-white animate-pulse"></div>
+              <div 
+                className="loading-progress h-full bg-white" 
+                style={{ 
+                  width: `${Math.round(((loadingProgress.images + loadingProgress.videos + loadingProgress.fonts) / loadingProgress.total) * 100)}%`,
+                  transition: 'width 0.3s ease-in-out'
+                }}
+              ></div>
             </div>
+            <p className="mt-2 text-lg">
+              {Math.round(((loadingProgress.images + loadingProgress.videos + loadingProgress.fonts) / loadingProgress.total) * 100)}%
+            </p>
           </div>
         </div>
       )}
