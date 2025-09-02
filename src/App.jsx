@@ -40,7 +40,80 @@ const App = () => {
 
     if (!showContent) return;
 
-    gsap.to(".main", {})
+    gsap.to(".scene", {
+      rotate: 0,
+      scale: 1,
+      duration: 2,
+      delay: -1,
+      ease: "expo.easeInOut"
+    });
+    gsap.to(".sky", {
+      rotate: 0,
+      scale: 1.1,
+      duration: 2,
+      delay: -0.8,
+      ease: "expo.easeInOut"
+    });
+    gsap.to(".buildings", {
+      rotate: 0,
+      scale: 1,
+      duration: 2,
+      delay: -1,
+      ease: "expo.easeInOut"
+    });
+    gsap.to(".woman", {
+      rotate: 0,
+      scale: 0.4,
+      bottom: 0,
+      duration: 2,
+      delay: -0.8,
+      ease: "expo.InOut"
+    });
+    gsap.fromTo(".man",
+    { 
+      y: 150,          // slide up into view
+      x: 150,
+      opacity: 0, 
+      scale: 1.5,      // start slightly smaller than final
+      rotate: 20       // exaggerated tilt
+    },
+    { 
+      y: 0,
+      x: 0,
+      opacity: 1,
+      scale: 0.45,
+      rotate: 0,
+      duration: 1.8,
+      ease: "expo.out"
+    }
+    );
+
+    gsap.fromTo(".text h1",
+      { 
+        y: -200,       // start higher
+        opacity: 0,    // fade in
+        scale: 1.6     // start bigger
+      },
+      { 
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        duration: 1.5,
+        ease: "elastic.out(1, 0.5)", // smooth spring bounce
+        stagger: 0.2                 // each h1 comes after the other
+      }
+    );
+
+    // floating loop for both characters in second screen
+    gsap.to(".limg img", {
+      y: "+=10",
+      repeat: -1,
+      yoyo: true,
+      duration: 2,
+      ease: "sine.easeInOut",
+      delay: 2
+    });
+
 
     const main = document.querySelector(".main");
     main?.addEventListener("mousemove", function (e) {
@@ -48,7 +121,7 @@ const App = () => {
 
       // text animation
       gsap.to(".imagesdiv .text", {
-        x: `${-50 - xMove * 0.4}%`,
+        xPercent:xMove * 0.4,
       });
 
       // sky animation
@@ -104,7 +177,8 @@ const App = () => {
       </div>
       {showContent && (
         <div className="main w-full">
-          <div className="landing w-full h-screen bg-black">
+          <div className="landing overflow-hidden relative w-full h-screen bg-black">
+            <div className="scene rotate-[-10deg] scale-[1.7]">
             <div className="navbar absolute top-0 left-0 z-10 w-full px-10 py-10">
               <div className="logo flex items-center gap-6">
                 <div className="lines flex flex-col gap-[5px]">
@@ -120,14 +194,14 @@ const App = () => {
             <div className="imagesdiv relative w-full h-screen overflow-hidden">
               {/* background sky */}
               <img
-                className="sky absolute scale-[1.2] top-0 left-0 w-full h-full object-cover"
+                className="sky absolute scale-[1.7] rotate-[-20deg] top-0 left-0 w-full h-full object-cover"
                 src="sky1.png"
                 alt="sky"
               />
 
               {/* buildings */}
               <img
-                className="buildings absolute top-0 left-0 w-full h-full object-cover"
+                className="buildings absolute rotate-[5deg] scale-[1.4] top-0 left-0 w-full h-full object-cover"
                 src="./buildings2.png"
                 alt="building"
               />
@@ -140,7 +214,7 @@ const App = () => {
 
               {/* woman on the right corner */}
               <img
-                className="woman absolute bottom-0 right-[-10%] scale-40 origin-bottom-right"
+                className="woman absolute bottom-[-150%] right-[-10%] scale-70 rotate-[-25deg] origin-bottom-right"
                 src="./women.png"
                 alt="woman"
               />
@@ -152,6 +226,7 @@ const App = () => {
                 alt="man"
               />
             </div>
+            </div>
             <div className="btmbar flex flex-row-reverse justify-between text-white absolute bottom-0 left-0 z-10 w-full px-10 py-5 bg-gradient-to-t from-black to-transparent">
               <div className="scroll flex gap-4 justify-center">
                 <i className="text-2xl ri-arrow-down-line"></i>
@@ -162,7 +237,7 @@ const App = () => {
               <img className="h-[45px]" src="./ps5.png" alt="ps5" />
             </div>
           </div>
-          <div className="content w-full flex px-10 items-center justify-center h-screen bg-black">
+          <div className="content w-full flex px-10 items-center justify-center h-screen bg-gradient-to-br from-black via-purple-900 to-pink-800">
             <div className="cntnr w-full h-[80%] text-white flex">
               <div className="limg w-1/2 h-full relative">
                 <img
