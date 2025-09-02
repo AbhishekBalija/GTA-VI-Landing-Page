@@ -50,88 +50,215 @@ const App = () => {
     const timeoutId = setTimeout(() => {
       console.log('Asset loading timeout reached, proceeding anyway');
       setAssetsLoaded(true);
-    }, 8000); // 8 seconds timeout - increased to give more time for assets
+    }, 10000); // 10 seconds timeout - increased to give more time for assets
     
-    // Preload images
-    imagesToPreload.forEach(src => {
-      const img = new Image();
-      img.onload = () => {
-        console.log(`Image loaded: ${src}`);
-        loadedImages++;
-        setLoadingProgress(prev => ({
-          ...prev,
-          images: loadedImages
-        }));
-        checkAllLoaded();
-      };
-      img.onerror = () => {
-        console.error(`Failed to load image: ${src}`);
-        loadedImages++;
-        setLoadingProgress(prev => ({
-          ...prev,
-          images: loadedImages
-        }));
-        checkAllLoaded();
-      };
-      img.src = src; // Set src after attaching event handlers
-    });
-    
-    // Preload videos - using fetch to avoid CORS issues
-    videosToPreload.forEach(src => {
-      fetch(src)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Failed to fetch video: ${src}`);
+    // Function to load assets in sequence
+    const loadAssetsInSequence = () => {
+      // Step 1: Load fonts first (needed for loading screen)
+      const loadFonts = () => {
+        return new Promise((resolve) => {
+          if (fontsToPreload.length === 0) {
+            resolve();
+            return;
           }
-          console.log(`Video fetched: ${src}`);
-          loadedVideos++;
-          setLoadingProgress(prev => ({
-            ...prev,
-            videos: loadedVideos
-          }));
-          checkAllLoaded();
-          return response;
-        })
-        .catch(error => {
-          console.error(`Error fetching video: ${src}`, error);
-          loadedVideos++;
-          setLoadingProgress(prev => ({
-            ...prev,
-            videos: loadedVideos
-          }));
-          checkAllLoaded();
+          
+          let fontLoadCount = 0;
+          
+          fontsToPreload.forEach(src => {
+            const fontName = src.split('/').pop().split('.')[0]; // Extract font name from path
+            const fontFace = new FontFace(fontName, `url(${src})`, {
+              display: 'swap',
+              weight: 'normal'
+            });
+            
+            fontFace.load()
+              .then(loadedFace => {
+                // Add font to document fonts collection
+                document.fonts.add(loadedFace);
+                console.log(`Font loaded: ${src}`);
+                loadedFonts++;
+                setLoadingProgress(prev => ({
+                  ...prev,
+                  fonts: loadedFonts
+                }));
+                
+                fontLoadCount++;
+                if (fontLoadCount === fontsToPreload.length) {
+                  console.log('All fonts loaded');
+                  resolve();
+                }
+              })
+              .catch(error => {
+                console.error(`Failed to load font: ${src}`, error);
+                loadedFonts++;
+                setLoadingProgress(prev => ({
+                  ...prev,
+                  fonts: loadedFonts
+                }));
+                
+                fontLoadCount++;
+                if (fontLoadCount === fontsToPreload.length) {
+                  console.log('Font loading completed with errors');
+                  resolve();
+                }
+              });
+          });
         });
-    });
-    
-    // Preload fonts using FontFace API
-    fontsToPreload.forEach(src => {
-      const fontName = src.split('/').pop().split('.')[0]; // Extract font name from path
-      const fontFace = new FontFace(fontName, `url(${src})`);
+      };
       
-      fontFace.load()
-        .then(loadedFace => {
-          // Add font to document fonts collection
-          document.fonts.add(loadedFace);
-          console.log(`Font loaded: ${src}`);
-          loadedFonts++;
-          setLoadingProgress(prev => ({
-            ...prev,
-            fonts: loadedFonts
-          }));
+      // Step 2: Load videos with blob URL approach
+       const loadVideos = () => {
+         return new Promise((resolve) => {
+           if (videosToPreload.length === 0) {
+             resolve();
+             return;
+           }
+           
+           let videoLoadCount = 0;
+           
+           videosToPreload.forEach(src => {
+             // Use XMLHttpRequest for better browser compatibility
+             const xhr = new XMLHttpRequest();
+             xhr.open('GET', src, true);
+             xhr.responseType = 'blob';
+             
+             xhr.onload = function() {
+               if (this.status === 200) {
+                 // Create a blob URL that can be used in video elements
+                 const blob = new Blob([this.response], { type: 'video/mp4' });
+                 const blobUrl = URL.createObjectURL(blob);
+                 
+                 // Store the blob URL in window for later use
+                 if (!window.preloadedVideos) {
+                   window.preloadedVideos = {};
+                 }
+                 window.preloadedVideos[src] = blobUrl;
+                 
+                 console.log(`Video loaded as blob: ${src}`);
+                 loadedVideos++;
+                 setLoadingProgress(prev => ({
+                   ...prev,
+                   videos: loadedVideos
+                 }));
+                 
+                 videoLoadCount++;
+                 if (videoLoadCount === videosToPreload.length) {
+                   console.log('All videos loaded as blobs');
+                   resolve();
+                 }
+               } else {
+                 console.error(`Failed to load video: ${src}, status: ${this.status}`);
+                 loadedVideos++;
+                 setLoadingProgress(prev => ({
+                   ...prev,
+                   videos: loadedVideos
+                 }));
+                 
+                 videoLoadCount++;
+                 if (videoLoadCount === videosToPreload.length) {
+                   console.log('Video loading completed with errors');
+                   resolve();
+                 }
+               }
+             };
+             
+             xhr.onerror = function() {
+               console.error(`Network error loading video: ${src}`);
+               loadedVideos++;
+               setLoadingProgress(prev => ({
+                 ...prev,
+                 videos: loadedVideos
+               }));
+               
+               videoLoadCount++;
+               if (videoLoadCount === videosToPreload.length) {
+                 console.log('Video loading completed with errors');
+                 resolve();
+               }
+             };
+             
+             xhr.onprogress = function(event) {
+               if (event.lengthComputable) {
+                 const percentComplete = Math.round((event.loaded / event.total) * 100);
+                 console.log(`Video ${src} loading: ${percentComplete}%`);
+               }
+             };
+             
+             // Send the request
+             xhr.send();
+           });
+         });
+       };
+      
+      // Step 3: Load images
+      const loadImages = () => {
+        return new Promise((resolve) => {
+          if (imagesToPreload.length === 0) {
+            resolve();
+            return;
+          }
+          
+          let imageLoadCount = 0;
+          
+          imagesToPreload.forEach(src => {
+            const img = new Image();
+            img.onload = () => {
+              console.log(`Image loaded: ${src}`);
+              loadedImages++;
+              setLoadingProgress(prev => ({
+                ...prev,
+                images: loadedImages
+              }));
+              
+              imageLoadCount++;
+              if (imageLoadCount === imagesToPreload.length) {
+                console.log('All images loaded');
+                resolve();
+              }
+            };
+            img.onerror = () => {
+              console.error(`Failed to load image: ${src}`);
+              loadedImages++;
+              setLoadingProgress(prev => ({
+                ...prev,
+                images: loadedImages
+              }));
+              
+              imageLoadCount++;
+              if (imageLoadCount === imagesToPreload.length) {
+                console.log('Image loading completed with errors');
+                resolve();
+              }
+            };
+            img.src = src; // Set src after attaching event handlers
+          });
+        });
+      };
+      
+      // Execute loading in sequence: fonts -> videos -> images
+      loadFonts()
+        .then(() => loadVideos())
+        .then(() => loadImages())
+        .then(() => {
+          console.log('All assets loaded in sequence');
           checkAllLoaded();
         })
         .catch(error => {
-          console.error(`Failed to load font: ${src}`, error);
-          loadedFonts++;
-          setLoadingProgress(prev => ({
-            ...prev,
-            fonts: loadedFonts
-          }));
+          console.error('Error in sequential asset loading:', error);
           checkAllLoaded();
         });
-    });
+    };
+    
+    // Start the sequential loading process
+    loadAssetsInSequence();
     
     function checkAllLoaded() {
+      // Calculate total loaded assets and update progress percentage
+      const totalLoaded = loadedImages + loadedVideos + loadedFonts;
+      const percentLoaded = Math.floor((totalLoaded / totalAssets) * 100);
+      
+      console.log(`Loading progress: ${percentLoaded}% (${totalLoaded}/${totalAssets})`);
+      
       // Only set assetsLoaded to true when ALL assets are loaded (100%)
       if (loadedImages === imagesToPreload.length && 
           loadedVideos === videosToPreload.length && 
@@ -401,9 +528,9 @@ const App = () => {
             </div>
           </div>
           <div className="content relative w-full flex px-10 items-center justify-center h-screen overflow-hidden">
-            {/* Background video */}
+            {/* Background video - using preloaded blob URL if available */}
             <video
-              src="/city_night.mp4"
+              src={window.preloadedVideos && window.preloadedVideos["/city_night.mp4"] ? window.preloadedVideos["/city_night.mp4"] : "/city_night.mp4"}
               autoPlay
               loop
               muted
